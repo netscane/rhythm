@@ -1,0 +1,39 @@
+[package]
+name = "server"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-service = "2.0.2"
+actix-web = "4.9.0"
+anyhow = "1.0.91"
+futures = "0.3.31"
+jsonwebtoken = "=9.3.0"
+sea-orm = "0.12.15"
+serde = "1.0.213"
+serde_json = "1.0.117"
+thiserror = "1.0.65"
+application = { path = "../application" }
+infra = { path = "../infra" }
+domain = { path = "../domain" }
+model = { path = "../model" }
+mime = "0.3.17"
+log = "0.4.22"
+log4rs = "1.3.0"
+async-trait = "0.1.83"
+jwt = "0.16.0"
+sha2 = "0.10.8"
+hmac = "0.12.1"
+url = "2.5.4"
+actix-cors = "0.7.0"
+actix-files = "0.6"
+tokio = "1.42.0"
+toml = "0.8.19"
+chrono = "0.4.41"
+hex = "0.4"
+once_cell = "1.19"
+parking_lot = "0.12"
+rand = "0.8"
+md5 = "0.7"
+bcrypt = "0.15"
+serde_qs = "0.13"

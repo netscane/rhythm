@@ -1,0 +1,12 @@
+pub const APP_NAME: &str = "rhythm";
+pub const VERSION: &str = "1.0.0";
+pub const UI_AUTHORIZATION_HEADER: &str = "X-ND-Authorization";
+pub const UI_CLIENT_UNIQUE_ID_HEADER: &str = "X-ND-Client-Unique-Id";
+pub const JWT_SECRET_KEY: &str = "JWTSecret";
+pub const JWT_ISSUER: &str = "ND";
+pub const DEFAULT_SESSION_TIMEOUT: i64 = 24 * 3600;
+pub const COOKIE_EXPIRY: i64 = 365 * 24 * 3600; // One year
+pub const URL_PATH_NATIVE_API: &str = "/api";
+pub const URL_PATH_SUBSONIC_API: &str = "/rest";
+pub const URL_PATH_PUBLIC: &str = "/share";
+pub const URL_PATH_PUBLIC_IMAGES: &str = "/share/img";

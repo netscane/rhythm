@@ -1,0 +1,18 @@
+[package]
+name = "rhythm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+actix-web = "4.6.0"
+sea-orm = { version = "0.12.15", features = ["sqlx-postgres", "runtime-tokio-native-tls","macros"]}
+server = { path = "./src/crates/server" }
+domain = { path = "./src/crates/domain" }
+infra = { path = "./src/crates/infra" }
+application = { path = "./src/crates/application" }
+log4rs = "1.3.0"
+log = "0.4.22"
+env_logger = "0.11.6"
+toml = "0.8.19"
+serde = "1.0.217"
+pinyin = "0.10.0"

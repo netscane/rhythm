@@ -1,0 +1,23 @@
+[package]
+name = "application"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.91"
+domain = { path = "../domain" }
+model = { path = "../model" }
+thiserror = "1.0.65"
+async-trait = "0.1"
+tokio = { version = "1.0", features = ["full"] }
+log = "0.4"
+futures = "0.3"
+chrono = "0.4.41"
+regex = "1.11.1"
+lazy_static = "1.5.0"
+pinyin = "0.10.0"
+uuid = { version = "1.18.1", features = ["v4"] }
+dashmap = "5"
+bytes = "1"
+image = "0.25"
+md5 = "0.7"

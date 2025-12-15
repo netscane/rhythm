@@ -1,0 +1,60 @@
+
+# 开发环境自动登录用户名（设为空字符串禁用自动登录）
+auto_login_username = ""
+
+# 会话超时时间（单位：秒）
+jwt_expire_secs = 3600  # 1小时
+
+# JWT 密钥
+jwt_secret_key = "your_jwt_secret_key_here"
+
+# 密码加密密钥（用于 AES-256-GCM 加密存储密码，支持 Subsonic token 认证）
+password_encryption_key = "your_password_encryption_key_here"
+
+# database_url = "mysql://root:root123@192.168.2.2/rhythm"
+database_url = "postgresql://root:root123@192.168.2.31:5432/rhythm?sslmode=disable"
+
+# 封面文件名通配符列表（按优先级排序，越靠前优先级越高）
+# 支持格式：
+#   - "name.*" 匹配指定文件名（不区分扩展名），如 "cover.*" 匹配 cover.jpg, cover.png 等
+#   - "*.ext" 匹配指定扩展名，如 "*.jpg" 匹配所有 jpg 文件
+#   - "*" 匹配所有文件
+cover_art_wildcards = [
+    "cover.*",
+    "folder.*",
+    "front.*",
+    "album.*",
+    "albumart.*",
+    "*"
+]
+
+# 缓存配置
+[cache]
+# 缓存数据目录
+data_dir = "./data/cache"
+# 缓存过期时间（秒），默认 7 天
+ttl_secs = 604800
+
+# 服务器配置
+[server]
+# 监听地址
+host = "0.0.0.0"
+# 监听端口
+port = 5533
+
+# 转码配置
+[transcoding]
+# FFmpeg 可执行文件路径
+ffmpeg_path = "ffmpeg"
+# 默认目标格式（当客户端未指定且源文件为无损格式时使用）
+default_format = "mp3"
+# 默认比特率（kbps）
+default_bit_rate = 192
+# 是否启用转码缓存
+cache_enabled = true
+# 转码缓存过期时间（秒），默认 30 天
+cache_ttl_secs = 2592000
+# 流式传输块大小（字节）
+chunk_size = 65536
+# 无损格式列表（这些格式在请求时会被自动转码为 default_format）
+lossless_formats = ["flac", "wav", "aiff", "ape", "dsf", "dff", "wv"]
