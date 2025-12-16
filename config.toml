@@ -28,6 +28,14 @@ cover_art_wildcards = [
     "*"
 ]
 
+# 音乐库配置（首次启动时自动创建）
+# 支持多个音乐库，每个音乐库需要指定名称和路径
+# protocol: "local" (本地文件系统) 或 "smb" (网络共享)
+[[music_folders]]
+name = "Music"
+protocol = "local"
+path = "/data/share/Music/"
+
 # 缓存配置
 [cache]
 # 缓存数据目录
@@ -41,6 +49,10 @@ ttl_secs = 604800
 host = "0.0.0.0"
 # 监听端口
 port = 5533
+# UI 静态文件目录路径
+ui_path = "ui/dist"
+# UI 挂载的 URL 路径（访问 / 会重定向到此路径）
+ui_base_path = "/app"
 
 # 转码配置
 [transcoding]

@@ -41,17 +41,22 @@ async fn main() -> std::io::Result<()> {
     log4rs::init_config(config).unwrap();
     let cfg = AppConfigImpl::load().unwrap();
     let server_cfg = cfg.server();
+    let ui_server_cfg = server_cfg.clone();
     let db = server::AppState::init_db(&cfg.database_url()).await;
 
     let mut app_state = server::AppState::new(db.clone(), cfg).await;
     server::init_admin_user(&app_state).await;
+    server::init_music_folders(&app_state).await;
     server::setup_event_bus(&mut app_state).await;
     let app_state = web::Data::new(app_state);
     HttpServer::new(move || {
+        let ui_cfg = ui_server_cfg.clone();
         App::new()
             .app_data(app_state.clone())
             .wrap(Logger::default())
             .wrap(Logger::new("%a %{User-Agent}"))
+            // UI 静态文件服务（无需认证）
+            .configure(move |cfg| server::resources::configure_ui_service(cfg, &ui_cfg))
             // auth API 不需要 JWT 验证
             .service(server::auth::configure_service())
             // Subsonic API 使用自己的认证方式，不需要 JWT
@@ -59,7 +64,6 @@ async fn main() -> std::io::Result<()> {
             // 需要 JWT 验证的路由
             .service(
                 web::scope("")
-                    .configure(server::native_api::configure_service)
                     .configure(server::resources::configure_service)
                     .wrap(jwt_verify::JwtVerifier {})
                     .wrap(from_fn(other::auth_header_mapper))

@@ -13,7 +13,7 @@ use tokio::sync::{RwLock, Semaphore};
 
 // 导入通用 memtable 模块
 use super::super::memtable::{
-    IndexValue, IndexMatch, Memtable, MemtableContext, MemtablePersister, MemtableValue,
+    IndexMatch, IndexValue, Memtable, MemtableContext, MemtablePersister, MemtableValue,
 };
 
 #[derive(Clone)]
@@ -26,9 +26,11 @@ impl MemtableValue<i64> for AlbumWrapper {
     }
 
     fn get_indexes(&self) -> Vec<(&str, IndexValue, IndexMatch)> {
-        vec![
-            ("sort_name", IndexValue::String(self.0.sort_name.clone()), IndexMatch::Exact),
-        ]
+        vec![(
+            "sort_name",
+            IndexValue::String(self.0.sort_name.clone()),
+            IndexMatch::Exact,
+        )]
     }
 
     fn get_index(&self, index_name: &str) -> IndexValue {
@@ -75,19 +77,19 @@ where
         // 缓存结果
         let id_i64 = result.id.as_i64();
         let sort_name = result.sort_name.clone();
-        
+
         // ⚠️ 关键修复：先更新 lru_cache，释放锁后再更新 lru_sort_name_index
         // 避免在持有一个写锁时尝试获取另一个写锁导致的死锁
         {
             let mut lru_cache = self.lru_cache.write().await;
             lru_cache.put(id_i64, result.clone());
         } // 锁在这里释放
-        
+
         {
             let mut lru_sort_name_index = self.lru_sort_name_index.write().await;
             lru_sort_name_index.insert(sort_name, id_i64);
         }
-        
+
         Ok(result)
     }
 
@@ -107,7 +109,7 @@ where
             Ok(Some(album)) => {
                 let id_i64 = album.id.as_i64();
                 let sort_name = album.sort_name.clone();
-                
+
                 // ⚠️ 修复死锁：分开获取两个写锁
                 {
                     let mut lru_cache = self.lru_cache.write().await;
@@ -117,7 +119,7 @@ where
                     let mut lru_sort_name_index = self.lru_sort_name_index.write().await;
                     lru_sort_name_index.insert(sort_name, id_i64);
                 }
-                
+
                 Ok(Some(album))
             }
             result => result,
@@ -141,7 +143,7 @@ where
             Ok(Some(album)) => {
                 let id_i64 = album.id.as_i64();
                 let sort_name = album.sort_name.clone();
-                
+
                 // ⚠️ 修复死锁：分开获取两个写锁
                 {
                     let mut lru_cache = self.lru_cache.write().await;
@@ -151,7 +153,7 @@ where
                     let mut lru_sort_name_index = self.lru_sort_name_index.write().await;
                     lru_sort_name_index.insert(sort_name, id_i64);
                 }
-                
+
                 Ok(Some(album))
             }
             result => result,
@@ -367,8 +369,6 @@ where
         ));
 
         memtable_context.start_auto_flush_timer();
-        
-        info!("[Album] BufferedAlbumRepository initialized successfully with flush_timeout: {:?}", flush_timeout);
 
         Arc::new(Self {
             memtable_context,

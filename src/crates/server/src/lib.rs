@@ -1,7 +1,6 @@
 pub mod auth;
 pub mod consts;
 pub mod middleware;
-pub mod native_api;
 pub mod resources;
 pub mod subsonic;
 
@@ -28,10 +27,10 @@ use infra::auth::{BcryptPasswordHasher, JwtTokenService};
 use infra::config::AppConfigImpl;
 use infra::event_bus::in_memory::InMemoryEventBus;
 use infra::id_generator::SnowflakeIdGenerator;
-use infra::Aes256GcmEncryptor;
 use infra::metadata::audio_metadata_reader::AudioMetadataReaderImpl;
 use infra::repository::postgres::command::system_config::SystemConfigStoreImpl;
 use infra::repository::postgres::command::user::UserRepositoryImpl;
+use infra::Aes256GcmEncryptor;
 
 use infra::repository::buffered::command::{
     album::BufferedAlbumRepository, artist::BufferedArtistRepository,
@@ -58,7 +57,7 @@ use infra::storage::factory::StorageClientFactoryImpl;
 use infra::{CoverArtCacheImpl, FfmpegStreamer, StreamCacheImpl};
 use model::scan_status::ScanStatusRepository;
 use sea_orm::DatabaseConnection;
-use sea_orm::{ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
+use sea_orm::{ActiveModelTrait, ConnectOptions, ConnectionTrait, Database, DbBackend, Statement};
 use std::sync::Arc;
 use tokio::time::Duration;
 
@@ -183,7 +182,13 @@ pub async fn init_admin_user(state: &AppState) {
     let token_svc: Arc<dyn application::auth::TokenService> =
         Arc::new(JwtTokenService::new("temp_secret", 3600));
 
-    let auth_service = AuthService::new(user_repo, hasher, encryptor, token_svc, state.id_generator.clone());
+    let auth_service = AuthService::new(
+        user_repo,
+        hasher,
+        encryptor,
+        token_svc,
+        state.id_generator.clone(),
+    );
 
     match auth_service.create_admin("admin", &password).await {
         Ok(()) => {
@@ -204,6 +209,70 @@ pub async fn init_admin_user(state: &AppState) {
             panic!("Admin user not created: {}", e);
         }
     }
+}
+
+/// Initialize music folders from config on first startup
+pub async fn init_music_folders(state: &AppState) {
+    use infra::repository::postgres::command::db_data::library;
+    use log::{info, warn};
+    use sea_orm::{EntityTrait, Set};
+
+    let music_folders = state.app_cfg.music_folders();
+    if music_folders.is_empty() {
+        info!("No music folders configured in config.toml");
+        return;
+    }
+
+    // Check if any library already exists
+    let existing = library::Entity::find().one(&state.db).await;
+
+    match existing {
+        Ok(Some(_)) => {
+            info!("Music folders already exist in database, skipping initialization");
+            return;
+        }
+        Ok(None) => {
+            info!("Initializing music folders from config...");
+        }
+        Err(e) => {
+            warn!("Failed to check existing libraries: {}", e);
+            return;
+        }
+    }
+
+    let zero_time = chrono::DateTime::from_timestamp(0, 0).unwrap().naive_utc();
+
+    for (idx, folder) in music_folders.iter().enumerate() {
+        let id = (idx + 1) as i64;
+        let library_model = library::ActiveModel {
+            id: Set(id),
+            name: Set(folder.name.clone()),
+            path_protocol: Set(folder.protocol.clone()),
+            path_path: Set(folder.path.clone()),
+            scan_status: Set(1_i32), // Idle
+            last_scan_at: Set(zero_time),
+            version: Set(1_i64),
+        };
+
+        match library_model.insert(&state.db).await {
+            Ok(_) => {
+                info!(
+                    "Created music folder: {} ({}: {})",
+                    folder.name, folder.protocol, folder.path
+                );
+            }
+            Err(e) => {
+                warn!("Failed to create music folder '{}': {}", folder.name, e);
+            }
+        }
+    }
+
+    info!("===========================================");
+    info!("  Music folders initialized!");
+    for folder in &music_folders {
+        info!("  - {}: {}", folder.name, folder.path);
+    }
+    info!("===========================================");
 }
 
 pub async fn setup_event_bus(state: &mut AppState) {

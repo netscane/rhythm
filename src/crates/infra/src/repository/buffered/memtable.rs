@@ -754,11 +754,13 @@ impl<K: MemtableKey, V: MemtableValue<K>, P: MemtablePersister<K, V>> MemtableCo
         let flush_timeout = self.flush_timeout;
         let name = self.name.clone();
 
+        /*
         info!(
             "[{}] Auto-flush timer starting with interval: {:?}",
             name,
             flush_timeout / 2
         );
+        */
 
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(flush_timeout / 2);

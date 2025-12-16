@@ -56,12 +56,30 @@ struct RawConfig {
     base_url: String,
     /// 封面文件名通配符列表（按优先级排序，越靠前优先级越高）
     cover_art_wildcards: Vec<String>,
+    /// 音乐库配置列表
+    music_folders: Vec<RawMusicFolder>,
     /// 缓存配置
     cache: RawCacheConfig,
     /// 服务器配置
     server: RawServerConfig,
     /// 转码配置
     transcoding: RawTranscodingConfig,
+}
+
+/// 音乐库配置（原始配置）
+#[derive(Debug, Deserialize, Clone)]
+pub struct RawMusicFolder {
+    /// 音乐库名称
+    pub name: String,
+    /// 路径协议：local 或 smb
+    #[serde(default = "default_protocol")]
+    pub protocol: String,
+    /// 音乐库路径
+    pub path: String,
+}
+
+fn default_protocol() -> String {
+    "local".to_string()
 }
 
 /// 缓存配置（原始配置）
@@ -133,6 +151,10 @@ struct RawServerConfig {
     host: String,
     /// 监听端口
     port: u16,
+    /// UI 静态文件目录路径
+    ui_path: String,
+    /// UI 挂载的 URL 路径
+    ui_base_path: String,
 }
 
 impl Default for RawServerConfig {
@@ -140,6 +162,8 @@ impl Default for RawServerConfig {
         Self {
             host: "0.0.0.0".to_string(),
             port: 5533,
+            ui_path: "ui/dist".to_string(),
+            ui_base_path: "/app".to_string(),
         }
     }
 }
@@ -172,6 +196,7 @@ impl Default for RawConfig {
                 "albumart.*".to_string(),
                 "*".to_string(),
             ],
+            music_folders: vec![],
             cache: RawCacheConfig::default(),
             server: RawServerConfig::default(),
             transcoding: RawTranscodingConfig::default(),
@@ -207,6 +232,10 @@ pub struct ServerConfig {
     pub host: String,
     /// 监听端口
     pub port: u16,
+    /// UI 静态文件目录路径
+    pub ui_path: String,
+    /// UI 挂载的 URL 路径
+    pub ui_base_path: String,
 }
 
 /// 转码配置
@@ -242,6 +271,17 @@ impl TranscodingConfig {
     }
 }
 
+/// 音乐库配置
+#[derive(Debug, Clone)]
+pub struct MusicFolderConfig {
+    /// 音乐库名称
+    pub name: String,
+    /// 路径协议：local 或 smb
+    pub protocol: String,
+    /// 音乐库路径
+    pub path: String,
+}
+
 #[derive(Debug, Clone)]
 pub struct AppConfigImpl {
     pub auto_login_username: Arc<RwLock<String>>,
@@ -255,6 +295,7 @@ pub struct AppConfigImpl {
     pub cover_art_source_priority: Arc<RwLock<HashMap<CoverSourceType, f32>>>,
     pub base_url: Arc<RwLock<String>>,
     pub cover_art_wildcards: Arc<RwLock<Vec<String>>>,
+    pub music_folders: Arc<RwLock<Vec<MusicFolderConfig>>>,
     pub cache: Arc<RwLock<CacheConfig>>,
     pub server: Arc<RwLock<ServerConfig>>,
     pub transcoding: Arc<RwLock<TranscodingConfig>>,
@@ -274,6 +315,8 @@ impl AppConfigImpl {
         let server_config = ServerConfig {
             host: data.server.host,
             port: data.server.port,
+            ui_path: data.server.ui_path,
+            ui_base_path: data.server.ui_base_path,
         };
         let transcoding_config = TranscodingConfig {
             ffmpeg_path: data.transcoding.ffmpeg_path,
@@ -284,6 +327,15 @@ impl AppConfigImpl {
             chunk_size: data.transcoding.chunk_size,
             lossless_formats: data.transcoding.lossless_formats,
         };
+        let music_folders_config: Vec<MusicFolderConfig> = data
+            .music_folders
+            .into_iter()
+            .map(|f| MusicFolderConfig {
+                name: f.name,
+                protocol: f.protocol,
+                path: f.path,
+            })
+            .collect();
         AppConfigImpl {
             auto_login_username: Arc::new(RwLock::new(data.auto_login_username)),
             jwt_expire_secs: Arc::new(AtomicU64::new(data.jwt_expire_secs as u64)),
@@ -296,6 +348,7 @@ impl AppConfigImpl {
             cover_art_source_priority: Arc::new(RwLock::new(cover_art_source_priority)),
             base_url: Arc::new(RwLock::new(data.base_url)),
             cover_art_wildcards: Arc::new(RwLock::new(data.cover_art_wildcards)),
+            music_folders: Arc::new(RwLock::new(music_folders_config)),
             cache: Arc::new(RwLock::new(cache_config)),
             server: Arc::new(RwLock::new(server_config)),
             transcoding: Arc::new(RwLock::new(transcoding_config)),
@@ -304,6 +357,11 @@ impl AppConfigImpl {
 
     pub fn cover_art_wildcards(&self) -> Vec<String> {
         let cfg_val = self.cover_art_wildcards.read().unwrap();
+        cfg_val.clone()
+    }
+
+    pub fn music_folders(&self) -> Vec<MusicFolderConfig> {
+        let cfg_val = self.music_folders.read().unwrap();
         cfg_val.clone()
     }
 
